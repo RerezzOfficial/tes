@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Top-Up Balance System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4e73df;
+            --secondary-color: #f8f9fa;
+            --success-color: #1cc88a;
+            --warning-color: #f6c23e;
+            --danger-color: #e74a3b;
+            --dark-color: #5a5c69;
+        }
+        
+        body {
+            font-family: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #f8f9fc;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 0.35rem;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        }
+        
+        .card-header {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            background-color: var(--primary-color);
+            border-radius: 0.35rem 0.35rem 0 0 !important;
+        }
+        
+        .step {
+            display: none;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        .step.active {
+            display: block;
+        }
+        
+        .product-card {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid #e3e6f0;
+        }
+        
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+        }
+        
+        .product-card.selected {
+            border: 2px solid var(--primary-color);
+            background-color: rgba(78, 115, 223, 0.05);
+        }
+        
+        .nav-pills .nav-link {
+            color: var(--dark-color);
+            border-radius: 0;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .nav-pills .nav-link.active {
+            color: var(--primary-color);
+            background-color: transparent;
+            border-bottom: 3px solid var(--primary-color);
+            font-weight: 600;
+        }
+        
+        .nav-pills .nav-link.disabled {
+            color: #d1d3e2;
+        }
+        
+        .qr-container {
+            max-width: 300px;
+            margin: 0 auto;
+            padding: 1rem;
+            background: white;
+            border-radius: 0.35rem;
+            box-shadow: 0 0.15rem 0.5rem rgba(0, 0, 0, 0.1);
+        }
+        
+        .loading-spinner {
+            display: none;
+        }
+        
+        .status-badge {
+            font-size: 1rem;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .btn-primary:hover {
+            background-color: #2e59d9;
+            border-color: #2653d4;
+        }
+        
+        .alert {
+            border-radius: 0.35rem;
+        }
+        
+        .selected-product {
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .price-tag {
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card shadow">
+                    <div class="card-header py-3">
+                        <h3 class="m-0 font-weight-bold text-white text-center">Top-Up Balance System</h3>
+                    </div>
+                    <div class="card-body p-4">
+                        <!-- Progress Steps -->
+                        <ul class="nav nav-pills nav-fill mb-4">
+                            <li class="nav-item">
+                                <a class="nav-link active" id="step1-tab">1. Pilih Provider</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link disabled" id="step2-tab">2. Pilih Produk</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link disabled" id="step3-tab">3. Isi Target</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link disabled" id="step4-tab">4. Pembayaran</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link disabled" id="step5-tab">5. Selesai</a>
+                            </li>
+                        </ul>
+
+                        <!-- Step 1: Select Provider -->
+                        <div id="step1" class="step active">
+                            <h4 class="text-center mb-4">Pilih Provider</h4>
+                            <div class="mb-3">
+                                <label for="providerSelect" class="form-label fw-bold">Provider:</label>
+                                <select id="providerSelect" class="form-select form-select-lg">
+                                    <option value="" selected disabled>Loading providers...</option>
+                                </select>
+                            </div>
+                            <div class="d-grid gap-2 mt-4">
+                                <button id="nextStep1" class="btn btn-primary btn-lg py-2" disabled>
+                                    Lanjut <i class="fas fa-arrow-right ms-2"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Select Product -->
+                        <div id="step2" class="step">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h4 class="mb-0">Pilih Produk</h4>
+                                <button id="backStep2" class="btn btn-outline-secondary">
+                                    <i class="fas fa-arrow-left me-1"></i> Kembali
+                                </button>
+                            </div>
+                            
+                            <div id="loadingProducts" class="text-center py-5">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-3 text-muted">Memuat produk...</p>
+                            </div>
+                            
+                            <div id="productsContainer" class="row g-3"></div>
+                            
+                            <div id="noProductsMessage" class="text-center py-4 d-none">
+                                <div class="alert alert-warning py-3">
+                                    <i class="fas fa-exclamation-circle me-2"></i>
+                                    Tidak ada produk tersedia untuk provider ini
+                                </div>
+                                <button id="backToProviders" class="btn btn-primary">
+                                    <i class="fas fa-arrow-left me-1"></i> Kembali ke Provider
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Enter Target -->
+                        <div id="step3" class="step">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h4 class="mb-0">Isi Data Pembelian</h4>
+                                <button id="backStep3" class="btn btn-outline-secondary">
+                                    <i class="fas fa-arrow-left me-1"></i> Kembali
+                                </button>
+                            </div>
+                            
+                            <div class="card mb-4 selected-product">
+                                <div class="card-body">
+                                    <h5 id="selectedProductName" class="card-title fw-bold"></h5>
+                                    <p class="card-text mb-1">
+                                        <strong>Harga:</strong> <span id="selectedProductPrice" class="price-tag"></span>
+                                    </p>
+                                    <p class="card-text mb-0">
+                                        <strong>Kode:</strong> <span id="selectedProductCode" class="text-muted"></span>
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label for="targetInput" class="form-label fw-bold">Nomor HP/Akun Tujuan:</label>
+                                <input type="text" id="targetInput" class="form-control form-control-lg" 
+                                       placeholder="Contoh: 081234567890" required>
+                                <div class="invalid-feedback">Harap masukkan nomor HP/akun tujuan</div>
+                            </div>
+                            
+                            <div class="d-grid gap-2 mt-4">
+                                <button id="nextStep3" class="btn btn-primary btn-lg py-2">
+                                    Pesan Sekarang <i class="fas fa-shopping-cart ms-2"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Step 4: Payment -->
+                        <div id="step4" class="step">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h4 class="mb-0">Pembayaran</h4>
+                                <button id="backStep4" class="btn btn-outline-secondary">
+                                    <i class="fas fa-arrow-left me-1"></i> Kembali
+                                </button>
+                            </div>
+                            
+                            <div class="alert alert-primary">
+                                <h5 class="alert-heading">Detail Pesanan</h5>
+                                <hr>
+                                <p class="mb-1"><strong>Produk:</strong> <span id="paymentProductName"></span></p>
+                                <p class="mb-1"><strong>Target:</strong> <span id="paymentTarget"></span></p>
+                                <p class="mb-0"><strong>Total Pembayaran:</strong> <span id="paymentAmount" class="price-tag"></span></p>
+                            </div>
+                            
+                            <div id="paymentLoading" class="text-center py-5">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-3 text-muted">Memproses pembayaran...</p>
+                            </div>
+                            
+                            <div id="paymentContent" class="d-none animate__animated animate__fadeIn">
+                                <div class="qr-container mb-4">
+                                    <h6 class="text-center mb-3 fw-bold">Scan QR Code untuk Pembayaran</h6>
+                                    <img id="qrImage" src="" class="img-fluid rounded mx-auto d-block" alt="QR Code">
+                                    <p class="text-center mt-3 text-muted"><small>Atau gunakan metode pembayaran lain sesuai instruksi</small></p>
+                                </div>
+                                
+                                <div class="alert alert-warning">
+                                    <h6 class="fw-bold"><i class="fas fa-info-circle me-2"></i>Instruksi Pembayaran:</h6>
+                                    <ol class="mb-0">
+                                        <li>Scan QR Code di atas atau gunakan metode pembayaran yang tersedia</li>
+                                        <li>Lakukan pembayaran sesuai nominal yang tertera</li>
+                                        <li>Setelah pembayaran berhasil, klik tombol "Saya Sudah Bayar" di bawah</li>
+                                    </ol>
+                                </div>
+                            </div>
+                            
+                            <div id="paymentError" class="alert alert-danger text-center d-none">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <span id="paymentErrorMessage"></span>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between mt-4">
+                                <button id="cancelDepositBtn" class="btn btn-danger d-none">
+                                    <i class="fas fa-times me-1"></i> Batalkan Pembayaran
+                                </button>
+                                <button id="confirmPaymentBtn" class="btn btn-success ms-auto d-none">
+                                    <i class="fas fa-check me-1"></i> Saya Sudah Bayar
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Step 5: Order Status -->
+                        <div id="step5" class="step">
+                            <h4 class="text-center mb-4">Status Pemesanan</h4>
+                            
+                            <div id="orderLoading" class="text-center py-5">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-3 text-muted">Memproses pesanan...</p>
+                            </div>
+                            
+                            <div id="orderContent" class="d-none animate__animated animate__fadeIn">
+                                <div class="text-center mb-4">
+                                    <span id="orderStatusBadge" class="status-badge bg-secondary">Memproses...</span>
+                                </div>
+                                
+                                <div class="card mb-4">
+                                    <div class="card-body">
+                                        <h5 class="fw-bold">Detail Transaksi</h5>
+                                        <hr>
+                                        <p class="mb-2"><strong>ID Transaksi:</strong> <span id="orderTrxId" class="text-monospace"></span></p>
+                                        <p class="mb-2"><strong>Produk:</strong> <span id="orderProductName"></span></p>
+                                        <p class="mb-2"><strong>Target:</strong> <span id="orderTarget"></span></p>
+                                        <p class="mb-2"><strong>Harga:</strong> <span id="orderAmount" class="price-tag"></span></p>
+                                        <p class="mb-0"><strong>Status:</strong> <span id="orderStatusText" class="text-capitalize"></span></p>
+                                    </div>
+                                </div>
+                                
+                                <div id="orderSuccess" class="alert alert-success d-none">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-check-circle fa-2x me-3"></i>
+                                        <div>
+                                            <h5 class="alert-heading mb-1">Pemesanan Berhasil!</h5>
+                                            <p class="mb-0">Produk Anda telah berhasil diproses. Terima kasih telah menggunakan layanan kami.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div id="orderPending" class="alert alert-warning d-none">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-clock fa-2x me-3"></i>
+                                        <div>
+                                            <h5 class="alert-heading mb-1">Pemesanan dalam Proses</h5>
+                                            <p class="mb-0">Pesanan Anda sedang diproses. Status akan diperbarui otomatis.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div id="orderFailed" class="alert alert-danger d-none">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-times-circle fa-2x me-3"></i>
+                                        <div>
+                                            <h5 class="alert-heading mb-1">Pemesanan Gagal</h5>
+                                            <p class="mb-0">Maaf, terjadi kesalahan dalam memproses pesanan Anda. Silakan coba lagi atau hubungi layanan pelanggan.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-grid gap-2 mt-4">
+                                    <button id="newOrderBtn" class="btn btn-primary btn-lg py-2">
+                                        <i class="fas fa-plus me-1"></i> Buat Pesanan Baru
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div id="orderError" class="alert alert-danger text-center d-none">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <span id="orderErrorMessage"></span>
+                                <div class="mt-2">
+                                    <button class="btn btn-sm btn-outline-primary" onclick="window.location.reload()">
+                                        <i class="fas fa-sync-alt me-1"></i> Refresh Halaman
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-3 text-muted">
+                    <small>&copy; 2023 Top-Up Balance System. All rights reserved.</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Font Awesome for icons -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Animate.css for animations -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    
+    <script>
+        // Global variables
+        const STATE = {
+            selectedProvider: null,
+            selectedProduct: null,
+            depositData: null,
+            orderData: null,
+            statusCheckInterval: null,
+            CHECK_INTERVAL: 6000, // 6 seconds
+  
